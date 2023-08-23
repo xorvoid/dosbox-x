@@ -23,6 +23,150 @@
 #include "fpu.h"
 #include "paging.h"
 #include "mmx.h"
+#include "inout.h"
+#include "dos_inc.h"
+#include "hooklib.h"
+#include <dlfcn.h>
+
+#define FAIL(...) do { fprintf(stderr, "FAIL: "); fprintf(stderr, __VA_ARGS__); fprintf(stderr, "\n"); abort(); } while(0)
+
+typedef struct hooklib hooklib_t;
+struct hooklib
+{
+  void *lib;
+  hooklib_init_fn_t init;
+  hooklib_exec_fn_t exec;
+  hooklib_notify_fn_t notify;
+  hooklib_machine_t machine[1];
+};
+
+static uint8_t *hooklib_machine_mem_hostaddr(hooklib_machine_ctx_t *, uint32_t addr) {
+  // If the address is definitely in conventional memory range, just form a simple host address
+  // NOTE: This bypasses the TLB & Paging mechanisms.. so it's only sane in Real Mode assuming
+  // we have enough memory!
+  if (0x8000 <= addr && addr < 0x9f000) {
+    return GetMemBase() + addr;
+  }
+  FAIL("Cannot form host address here: addr=%08x", addr);
+
+  // const HostPt tlb_addr = get_tlb_read((PhysPt)addr);
+  // if (!tlb_addr) FAIL("Cannot form host address here: addr=%08x", addr);
+  // return (uint8_t*)tlb_addr + addr;
+}
+
+static uint8_t hooklib_machine_mem_read8(hooklib_machine_ctx_t *, uint32_t addr) {
+  return mem_readb(addr);
+}
+
+static uint16_t hooklib_machine_mem_read16(hooklib_machine_ctx_t *, uint32_t addr) { return mem_readw(addr); }
+
+static void hooklib_machine_mem_write8(hooklib_machine_ctx_t *, uint32_t addr, uint8_t val) { mem_writeb(addr, val); }
+
+static void hooklib_machine_mem_write16(hooklib_machine_ctx_t *, uint32_t addr, uint16_t val) { mem_writew(addr, val); }
+
+static uint8_t hooklib_machine_io_in8(hooklib_machine_ctx_t *, uint16_t port) { return IO_ReadB(port); }
+
+static uint16_t hooklib_machine_io_in16(hooklib_machine_ctx_t *, uint16_t port) { return IO_ReadW(port); }
+
+static void hooklib_machine_io_out8(hooklib_machine_ctx_t *, uint16_t port, uint8_t val) { IO_WriteB(port, val); }
+
+static void hooklib_machine_io_out16(hooklib_machine_ctx_t *, uint16_t port, uint16_t val) { IO_WriteW(port, val); }
+
+static hooklib_t hook[1];
+static void init_hook(void)
+{
+  const char *path = getenv("HOOKLIB_PATH");
+  if (!path) path = "hooklib.dylib";
+
+  hook->lib = dlopen(path, RTLD_NOW);
+  if (!hook->lib) FAIL("Failed to load hooklib libray from '%s'", path);
+
+  *(void**)&hook->init = dlsym(hook->lib, "hooklib_init");
+  if(!hook->init) FAIL("Failed to find 'hooklib_init'");
+
+  *(void**)&hook->exec = dlsym(hook->lib, "hooklib_exec");
+  if(!hook->exec) FAIL("Failed to find 'hooklib_exec'");
+
+  *(void**)&hook->notify = dlsym(hook->lib, "hooklib_notify");
+  if(!hook->notify) FAIL("Failed to find 'hooklib_notify'");
+
+  memset(hook->machine, 0, sizeof(*hook->machine));
+  hook->machine->hardware->ctx              = NULL;
+  hook->machine->hardware->mem_hostaddr     = hooklib_machine_mem_hostaddr;
+  hook->machine->hardware->mem_read8        = hooklib_machine_mem_read8;
+  hook->machine->hardware->mem_read16       = hooklib_machine_mem_read16;
+  hook->machine->hardware->mem_write8       = hooklib_machine_mem_write8;
+  hook->machine->hardware->mem_write16      = hooklib_machine_mem_write16;
+  hook->machine->hardware->io_in8           = hooklib_machine_io_in8;
+  hook->machine->hardware->io_in16          = hooklib_machine_io_in16;
+  hook->machine->hardware->io_out8          = hooklib_machine_io_out8;
+  hook->machine->hardware->io_out16         = hooklib_machine_io_out16;
+
+  hook->init(hook->machine->hardware);
+}
+
+static void cpu_state_dump(hooklib_machine_registers_t *cpu)
+{
+  cpu->ax = reg_ax;
+  cpu->bx = reg_bx;
+  cpu->cx = reg_cx;
+  cpu->dx = reg_dx;
+
+  cpu->si = reg_si;
+  cpu->di = reg_di;
+  cpu->bp = reg_bp;
+  cpu->sp = reg_sp;
+  cpu->ip = reg_ip;
+
+  cpu->cs = SegValue(cs);
+  cpu->ds = SegValue(ds);
+  cpu->es = SegValue(es);
+  cpu->ss = SegValue(ss);
+
+  cpu->flags = reg_flags;
+}
+
+static void cpu_state_load(hooklib_machine_registers_t *cpu)
+{
+  reg_ax = cpu->ax;
+  reg_bx = cpu->bx;
+  reg_cx = cpu->cx;
+  reg_dx = cpu->dx;
+
+  reg_si = cpu->si;
+  reg_di = cpu->di;
+  reg_bp = cpu->bp;
+  reg_sp = cpu->sp;
+  reg_ip = cpu->ip;
+
+  SegSet16(cs, cpu->cs);
+  SegSet16(ds, cpu->ds);
+  SegSet16(es, cpu->es);
+  SegSet16(ss, cpu->ss);
+
+  reg_flags = cpu->flags;
+}
+
+static int attempt_hook(void)
+{
+  cpu_state_dump(hook->machine->registers);
+  int hooked = hook->exec(hook->machine, InterruptCount);
+  if (hooked) {
+    cpu_state_load(hook->machine->registers);
+  }
+  return hooked;
+}
+
+static void notify_ip(void)
+{
+  cpu_state_dump(hook->machine->registers);
+  hook->notify(hook->machine);
+}
+
+void _report_vga_write()
+{
+  printf("==== VGA write | CS:IP = %04x:%04x\n", SegValue(cs), reg_ip);
+}
 
 bool CPU_RDMSR();
 bool CPU_WRMSR();
@@ -154,10 +298,13 @@ static INLINE uint32_t Fetchd() {
 #define EALookupTable (core.ea_table)
 
 Bits CPU_Core_Normal_Run(void) {
-    if (CPU_Cycles <= 0)
-	    return CBRET_NONE;
+  if (CPU_Cycles <= 0)
+    return CBRET_NONE;
 
-	while (CPU_Cycles-->0) {
+  while (1) {
+    notify_ip();
+    if (!(CPU_Cycles-->0)) break;
+
 		LOADIP;
 		last_prefix=MP_NONE;
 		core.opcode_index=cpu.code.big*(Bitu)0x200u;
@@ -174,6 +321,11 @@ Bits CPU_Core_Normal_Run(void) {
 		}
 #endif
 #endif
+    // hooklib integration
+    if (attempt_hook()) {
+      continue;
+    }
+
 		cycle_count++;
 restart_opcode:
 		switch (core.opcode_index+Fetchb()) {
@@ -208,11 +360,13 @@ restart_opcode:
 			continue;
 		}
 		SAVEIP;
+    notify_ip();
 	}
 	FillFlags();
 	return CBRET_NONE;
 decode_end:
 	SAVEIP;
+  notify_ip();
 	FillFlags();
 	return CBRET_NONE;
 }
@@ -233,6 +387,5 @@ Bits CPU_Core_Normal_Trap_Run(void) {
 
 
 void CPU_Core_Normal_Init(void) {
-
+  init_hook();
 }
-
