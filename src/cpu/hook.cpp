@@ -1,9 +1,9 @@
 #include "hook.h"
+#include "hooklib.h"
 #include "mem.h"
 #include "cpu.h"
 #include "inout.h"
 
-#include "hooklib.h"
 #include <dlfcn.h>
 
 #define FAIL(...) do { fprintf(stderr, "FAIL: "); fprintf(stderr, __VA_ARGS__); fprintf(stderr, "\n"); abort(); } while(0)
