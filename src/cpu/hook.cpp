@@ -1,5 +1,6 @@
 #include "hook.h"
-#include "hooklib.h"
+#include "export/dosbox-x/hooklib.h"
+
 #include "mem.h"
 #include "cpu.h"
 #include "inout.h"
