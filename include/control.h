@@ -52,7 +52,7 @@ public:
 
     Section_line * AddSection_line(char const * const _name,void (*_initfunction)(Section*));
     Section_prop * AddSection_prop(char const * const _name,void (*_initfunction)(Section*),bool canchange=false);
-    
+
     Section* GetSection(int index);
     Section* GetSection(std::string const&_sectionname) const;
     Section* GetSectionFromProperty(char const * const prop) const;
@@ -112,6 +112,7 @@ public:
     bool opt_nolog = false;
     bool opt_exit = false;
     bool opt_test = false;
+    std::string opt_hooklib = "";
 };
 
 #endif

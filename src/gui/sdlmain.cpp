@@ -6854,6 +6854,7 @@ bool DOSBOX_parse_argv() {
             fprintf(stderr,"  -?, -h, -help                           Show this help screen\n");
             fprintf(stderr,"  -v, -ver, -version                      Display DOSBox-X version information\n");
             fprintf(stderr,"  -fs, -fullscreen                        Start DOSBox-X in fullscreen mode\n");
+            fprintf(stderr,"  -hooklib <hooklib>                      Hook dosbox using a custom dynamic libray\n");
             fprintf(stderr,"  -conf <configfile>                      Start DOSBox-X with the specific config file\n");
             fprintf(stderr,"  -editconf <editor>                      Edit the config file with the specific editor\n");
             fprintf(stderr,"  -userconf                               Create user level config file\n");
@@ -7071,6 +7072,10 @@ bool DOSBOX_parse_argv() {
         else if (optname == "fastlaunch") {
             control->opt_fastlaunch = true;
         }
+        else if (optname == "hooklib") {
+            if (!control->cmdline->NextOptArgv(tmp)) return false;
+            control->opt_hooklib = tmp;
+        }
         else if (optname == "conf") {
             if (!control->cmdline->NextOptArgv(tmp)) return false;
             control->config_file_list.push_back(tmp);
@@ -7237,6 +7242,7 @@ void TIMER_Init();
 void CMOS_Init();
 void VGA_Init();
 void CPU_Init();
+void HOOK_Init(const char *libpath);
 void ISAPNP_Cfg_Init();
 #if C_FPU
 void FPU_Init();
@@ -8955,6 +8961,10 @@ int main(int argc, char* argv[]) SDL_MAIN_NOEXCEPT {
 #endif
         PARALLEL_Init();
         NE2K_Init();
+
+        if (control->opt_hooklib.size() > 0) {
+          HOOK_Init(control->opt_hooklib.c_str());
+        }
 
 #if DOSBOXMENU_TYPE == DOSBOXMENU_HMENU
         Reflect_Menu();
