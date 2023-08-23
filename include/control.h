@@ -153,6 +153,7 @@ public:
     bool opt_nolog;
     bool opt_exit;
     bool opt_test;
+    std::string opt_hooklib;
 };
 
 #endif
