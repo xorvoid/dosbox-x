@@ -34,6 +34,8 @@
 // TODO: #ifdef FPU...
 #include "fpu.h"
 
+size_t InterruptCount;
+
 /* dynamic core, policy, method, and flags.
  * We're going to make dynamic core more flexible, AND make sure
  * that both dynx86 and dynrec are using common memory mapping
@@ -1285,6 +1287,7 @@ void CPU_Interrupt(Bitu num,Bitu type,uint32_t oldeip) {
 		Segs.val[cs]=mem_readw((PhysPt)(base+(num << 2)+2));
 		Segs.phys[cs]=(PhysPt)Segs.val[cs] << 4u;
 		if (!cpu_allow_big16) cpu.code.big=false;
+		InterruptCount++;
 		return;
 	} else {
 		/* Protected Mode Interrupt */

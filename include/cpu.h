@@ -22,6 +22,8 @@
 
 #include "regs.h"
 
+extern size_t InterruptCount;
+
 #define CPU_AUTODETERMINE_NONE		0x00
 #define CPU_AUTODETERMINE_CORE		0x01
 #define CPU_AUTODETERMINE_CYCLES	0x02
