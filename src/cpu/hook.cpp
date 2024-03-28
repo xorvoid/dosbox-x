@@ -4,6 +4,7 @@
 #include "mem.h"
 #include "cpu.h"
 #include "inout.h"
+#include "logging.h"
 
 #include <dlfcn.h>
 
@@ -53,6 +54,8 @@ static bool hook_enable = false;
 
 void HOOK_Init(const char *libpath)
 {
+  LOG_MSG("Loading HOOKS from library %s", libpath);
+
   hook->lib = dlopen(libpath, RTLD_NOW);
   if (!hook->lib) FAIL("Failed to load hooklib libray from '%s'", libpath);
 
