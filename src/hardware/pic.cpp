@@ -162,7 +162,7 @@ void PIC_Controller::set_imr(uint8_t val) {
     if((irr & change)&isrr) check_for_irq();
 }
 
-void PIC_Controller::activate() { 
+void PIC_Controller::activate() {
     //Stops CPU if master, signals master if slave
     if(this == &master) {
         //cycles 0, take care of the port IO stuff added in raise_irq base caller.
@@ -176,7 +176,7 @@ void PIC_Controller::activate() {
     }
 }
 
-void PIC_Controller::deactivate() { 
+void PIC_Controller::deactivate() {
     //removes irq check value if master, signals master if slave
     if(this == &master) {
         /* NTS: DOSBox code used to set PIC_IRQCheck = 0 here.
@@ -264,7 +264,7 @@ static void write_command(Bitu port,Bitu val,Bitu iolen) {
                 pic->check_after_EOI();
 //              if (val&0x80);  // perform rotation
             } else {        // nonspecific EOI
-                if (pic->active_irq != 8) { 
+                if (pic->active_irq != 8) {
                     //If there is no irq in service, ignore the call, some games send an eoi to both pics when a sound irq happens (regardless of the irq).
                     pic->isr &= ~(1 << (pic->active_irq));
                     pic->isrr = (~pic->isr) | pic->isr_ignore;
@@ -305,13 +305,13 @@ static void write_data(Bitu port,Bitu val,Bitu iolen) {
         /*
             0       1 8086/8080  0 mcs-8085 mode
             1       1 Auto EOI   0 Normal EOI
-            2-3    0x Non buffer Mode 
-                   10 Buffer Mode Slave 
-                   11 Buffer mode Master    
-            4       Special/Not Special nested mode 
+            2-3    0x Non buffer Mode
+                   10 Buffer Mode Slave
+                   11 Buffer mode Master
+            4       Special/Not Special nested mode
         */
         pic->auto_eoi=(val & 0x2)>0;
-        
+
         LOG(LOG_PIC,LOG_NORMAL)("%d:ICW 4 %X",port==0x21 ? 0 : 1,(int)val);
 
         if ((val&0x01)==0) LOG_MSG("PIC:ICW4: %x, 8085 mode not handled",(int)val);
@@ -671,7 +671,7 @@ void PIC_RemoveSpecificEvents(PIC_EventHandler handler, Bitu val) {
         }
         prev_entry=entry;
         entry=entry->next;
-    }   
+    }
 }
 
 void PIC_RemoveEvents(PIC_EventHandler handler) {
@@ -696,7 +696,7 @@ void PIC_RemoveEvents(PIC_EventHandler handler) {
         }
         prev_entry=entry;
         entry=entry->next;
-    }   
+    }
 }
 
 extern ClockDomain clockdom_DOSBox_cycles;
@@ -1125,9 +1125,9 @@ const void *pic_state_event_table[] = {
 	cmos_timerevent_PIC_Event,
 	DISNEY_disable_PIC_Event,
 	GUS_TimerEvent_PIC_Event,
-#if C_IPX	
+#if C_IPX
 //	IPX_AES_EventHandler_PIC_Event,
-#endif	
+#endif
 	KEYBOARD_TransferBuffer_PIC_Event,
 	MOUSE_Limit_Events_PIC_Event,
 	MPU401_Event_PIC_Event,
@@ -1158,10 +1158,10 @@ const void *pic_state_event_table[] = {
 
 const void *pic_state_timer_table[] = {
 	NULL,
-#if C_IPX	
+#if C_IPX
 //	IPX_ClientLoop_PIC_Timer,
 //	IPX_ServerLoop_PIC_Timer,
-#endif	
+#endif
 	KEYBOARD_TickHandler_PIC_Timer,
 	KEYBOARD_TickHandler_PIC_Timer,
 	//MIXER_Mix_NoSound_PIC_Timer,
@@ -1439,4 +1439,3 @@ private:
     }
 } dummy;
 }
-

@@ -17,7 +17,7 @@
  */
 
 
-/* 
+/*
     Remove the sdl code from here and have it handled in sdlmain.
     That should call the mixer start from there or something.
 */
@@ -60,6 +60,7 @@
 #include "hardware.h"
 #include "programs.h"
 #include "midi.h"
+#include "hook.h"
 
 #define MIXER_SSIZE 4
 #define MIXER_VOLSHIFT 13
@@ -755,7 +756,7 @@ extern bool ticksLocked;
 
 #if 0//unused
 static inline bool Mixer_irq_important(void) {
-    /* In some states correct timing of the irqs is more important then 
+    /* In some states correct timing of the irqs is more important then
      * non stuttering audo */
     return (ticksLocked || (CaptureState & (CAPTURE_WAVE|CAPTURE_VIDEO|CAPTURE_MULTITRACK_WAVE)));
 }
@@ -889,6 +890,8 @@ static void MIXER_Mix(void) {
 }
 
 static void SDLCALL MIXER_CallBack(void * userdata, Uint8 *stream, int len) {
+    if (HOOK_AudioCallback(stream, len)) return;
+
     (void)userdata;//UNUSED
     int32_t volscale1 = (int32_t)(mixer.mastervol[0] * (1 << MIXER_VOLSHIFT));
     int32_t volscale2 = (int32_t)(mixer.mastervol[1] * (1 << MIXER_VOLSHIFT));
@@ -1156,7 +1159,7 @@ void MIXER_Controls_Init() {
 
     MAPPER_AddHandler(MAPPER_VolumeUp,MK_kpplus, MMODHOST,"volup","Increase volume",&item);
     item->set_text("Increase volume");
-    
+
     MAPPER_AddHandler(MAPPER_VolumeDown,MK_kpminus,MMODHOST,"voldown","Decrease volume",&item);
     item->set_text("Decrease volume");
 
