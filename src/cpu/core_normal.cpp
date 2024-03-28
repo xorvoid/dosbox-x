@@ -182,6 +182,7 @@ Bits CPU_Core_Normal_Run(void) {
 #endif
     // hooklib integration
     if (HOOK_Attempt()) {
+      cycle_count++;
       continue;
     }
 
@@ -194,7 +195,7 @@ restart_opcode:
 		#include "core_normal/prefix_66_0f.h"
 		default:
 		illegal_opcode:
-#if C_DEBUG	
+#if C_DEBUG
 			{
 				bool ignore=false;
 				Bitu len=(GETIP-reg_eip);

@@ -17,6 +17,7 @@ struct hooklib
   hooklib_exec_fn_t exec;
   hooklib_notify_fn_t notify;
   hooklib_machine_t machine[1];
+  hooklib_audio_t audio[1];
 };
 
 static uint8_t *hooklib_machine_mem_hostaddr(hooklib_machine_ctx_t *, uint32_t addr) {
@@ -76,7 +77,7 @@ void HOOK_Init(const char *libpath)
   hook->machine->hardware->io_out8          = hooklib_machine_io_out8;
   hook->machine->hardware->io_out16         = hooklib_machine_io_out16;
 
-  hook->init(hook->machine->hardware);
+  hook->init(hook->machine->hardware, hook->audio);
   hook_enable = true;
 }
 
@@ -127,7 +128,7 @@ int HOOK_Attempt(void)
   if (!hook_enable) {
     return 0;
   }
-  
+
   cpu_state_dump(hook->machine->registers);
   int hooked = hook->exec(hook->machine, InterruptCount);
   if (hooked) {
@@ -144,4 +145,14 @@ void HOOK_Notify_Ip(void)
 
   cpu_state_dump(hook->machine->registers);
   hook->notify(hook->machine);
+}
+
+int HOOK_AudioCallback(uint8_t *stream, int len)
+{
+  if (hook->audio->cb) {
+    hook->audio->cb(hook->audio->ctx, stream, len);
+    return 1;
+  } else {
+    return 0;
+  }
 }

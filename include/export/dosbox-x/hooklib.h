@@ -11,6 +11,7 @@ typedef struct hooklib_machine            hooklib_machine_t;
 typedef struct hooklib_machine_ctx        hooklib_machine_ctx_t;
 typedef struct hooklib_machine_hardware   hooklib_machine_hardware_t;
 typedef struct hooklib_machine_registers  hooklib_machine_registers_t;
+typedef struct hooklib_audio              hooklib_audio_t;
 
 struct hooklib_machine_hardware
 {
@@ -42,7 +43,13 @@ struct hooklib_machine
   hooklib_machine_registers_t  registers[1];
 };
 
-#define HOOKLIB_INIT_FUNC(name) void name(hooklib_machine_hardware_t *hw)
+struct hooklib_audio
+{
+  void (*cb)(void * userdata, uint8_t *stream, int len);
+  void *ctx;
+};
+
+#define HOOKLIB_INIT_FUNC(name) void name(hooklib_machine_hardware_t *hw, hooklib_audio_t *audio)
 HOOKLIB_INIT_FUNC(hooklib_init);
 typedef HOOKLIB_INIT_FUNC((*hooklib_init_fn_t));
 
