@@ -25,7 +25,7 @@
 #include "mmx.h"
 #include "inout.h"
 #include "dos_inc.h"
-#include "hook.h"
+#include "hydra.h"
 
 bool CPU_RDMSR();
 bool CPU_WRMSR();
@@ -161,7 +161,7 @@ Bits CPU_Core_Normal_Run(void) {
     return CBRET_NONE;
 
   while (1) {
-    HOOK_Notify_Ip();
+    HYDRA_Notify_Ip();
     if (!(CPU_Cycles-->0)) break;
 
 		LOADIP;
@@ -180,8 +180,8 @@ Bits CPU_Core_Normal_Run(void) {
 		}
 #endif
 #endif
-    // hooklib integration
-    if (HOOK_Attempt()) {
+    // hydra integration
+    if (HYDRA_Attempt()) {
       cycle_count++;
       continue;
     }
@@ -220,13 +220,13 @@ restart_opcode:
 			continue;
 		}
 		SAVEIP;
-    HOOK_Notify_Ip();
+    HYDRA_Notify_Ip();
 	}
 	FillFlags();
 	return CBRET_NONE;
 decode_end:
 	SAVEIP;
-  HOOK_Notify_Ip();
+  HYDRA_Notify_Ip();
 	FillFlags();
 	return CBRET_NONE;
 }

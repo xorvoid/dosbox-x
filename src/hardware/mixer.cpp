@@ -60,7 +60,7 @@
 #include "hardware.h"
 #include "programs.h"
 #include "midi.h"
-#include "hook.h"
+#include "hydra.h"
 
 #define MIXER_SSIZE 4
 #define MIXER_VOLSHIFT 13
@@ -890,7 +890,7 @@ static void MIXER_Mix(void) {
 }
 
 static void SDLCALL MIXER_CallBack(void * userdata, Uint8 *stream, int len) {
-    if (HOOK_AudioCallback(stream, len)) return;
+    if (HYDRA_AudioCallback(stream, len)) return;
 
     (void)userdata;//UNUSED
     int32_t volscale1 = (int32_t)(mixer.mastervol[0] * (1 << MIXER_VOLSHIFT));

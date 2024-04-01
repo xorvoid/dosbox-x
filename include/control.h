@@ -112,7 +112,7 @@ public:
     bool opt_nolog = false;
     bool opt_exit = false;
     bool opt_test = false;
-    std::string opt_hooklib = "";
+    std::string opt_hydra = "";
 };
 
 #endif
