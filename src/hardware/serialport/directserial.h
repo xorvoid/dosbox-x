@@ -57,7 +57,10 @@ private:
 	Bitu rx_retry;		// counter of retries (every millisecond)
 	Bitu rx_retry_max;	// how many POLL_EVENTS to wait before causing
 						// an overrun error.
-	bool doReceive();
+
+  Bitu assertdsr;
+
+  bool doReceive();
 
 #if SERIAL_DEBUG
 	bool dbgmsg_poll_block = false;

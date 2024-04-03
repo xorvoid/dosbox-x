@@ -62,6 +62,11 @@ CDirectSerial::CDirectSerial (Bitu id, CommandLine* cmd)
 		}
 	}
 
+  assertdsr = 0;
+  if (getBituSubstring("assertdsr:", &assertdsr, cmd)) {
+    setDSR(true);
+  }
+
 	CSerial::Init_Registers();
 	InstallationSuccessful = true;
 	rx_state = D_RX_IDLE;
@@ -316,7 +321,9 @@ void CDirectSerial::updateMSR () {
 	int new_status = SERIAL_getmodemstatus(comport);
 
 	setCTS((new_status&SERIAL_CTS)? true:false);
-	setDSR((new_status&SERIAL_DSR)? true:false);
+  if (!assertdsr) {
+    setDSR((new_status&SERIAL_DSR)? true:false);
+  }
 	setRI((new_status&SERIAL_RI)? true:false);
 	setCD((new_status&SERIAL_CD)? true:false);
 }
