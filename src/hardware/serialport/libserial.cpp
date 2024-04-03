@@ -299,7 +299,12 @@ bool SERIAL_open(const char* portname, COMPORT* port) {
 		return false;
 	}
 	char extended_portname[256] = "/dev/";
-	memcpy(extended_portname+5,portname,(size_t)len);
+  if (portname[0] == '/') {
+    memcpy(extended_portname, portname, (size_t)len);
+    extended_portname[len] = 0;
+  } else {
+    memcpy(extended_portname+5,portname,(size_t)len);
+  }
 
 	cp->porthandle = open (extended_portname, O_RDWR | O_NOCTTY | O_NONBLOCK);
 	if (cp->porthandle < 0) goto cleanup_error;
