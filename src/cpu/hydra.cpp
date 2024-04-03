@@ -25,7 +25,7 @@ static uint8_t *hydra_machine_mem_hostaddr(hydra_machine_ctx_t *, uint32_t addr)
   // If the address is definitely in conventional memory range, just form a simple host address
   // NOTE: This bypasses the TLB & Paging mechanisms.. so it's only sane in Real Mode assuming
   // we have enough memory!
-  if (0x8000 <= addr && addr < 0x9f000) {
+  if (0x500 <= addr && addr < 0x9f000) {
     return GetMemBase() + addr;
   }
   FAIL("Cannot form host address here: addr=%08x", addr);
@@ -57,7 +57,7 @@ void HYDRA_Init(const char *libpath)
   LOG_MSG("Loading HYDRA from library %s", libpath);
 
   hydra->lib = dlopen(libpath, RTLD_NOW);
-  if (!hydra->lib) FAIL("Failed to load hydra libray from '%s'", libpath);
+  if (!hydra->lib) FAIL("Failed to load hydra libray from '%s': %s", libpath, dlerror());
 
   *(void**)&hydra->init = dlsym(hydra->lib, "hydra_machine_init");
   if(!hydra->init) FAIL("Failed to find 'hydra_machine_init'");
