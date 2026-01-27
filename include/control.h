@@ -113,6 +113,7 @@ public:
     bool opt_exit = false;
     bool opt_test = false;
     std::string opt_hydra = "";
+    std::string opt_hydra_conf = "";
 };
 
 #endif

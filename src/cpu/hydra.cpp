@@ -6,7 +6,9 @@
 #include "inout.h"
 #include "logging.h"
 
+#include <assert.h>
 #include <dlfcn.h>
+#include <string.h>
 
 #define FAIL(...) do { fprintf(stderr, "FAIL: "); fprintf(stderr, __VA_ARGS__); fprintf(stderr, "\n"); abort(); } while(0)
 
@@ -49,12 +51,15 @@ static void hydra_machine_io_out8(hydra_machine_ctx_t *, uint16_t port, uint8_t 
 
 static void hydra_machine_io_out16(hydra_machine_ctx_t *, uint16_t port, uint16_t val) { IO_WriteW(port, val); }
 
+static void hydra_machine_state_save(hydra_machine_ctx_t *, const char *path) { HYDRA_MachineSave(path); }
+static void hydra_machine_state_restore(hydra_machine_ctx_t *, const char *path) { HYDRA_MachineRestore_Request(path); }
+
 static hydra_t hydra[1];
 static bool hydra_enable = false;
 
-void HYDRA_Init(const char *libpath)
+void HYDRA_Init(const char *libpath, const char *conf)
 {
-  LOG_MSG("Loading HYDRA from library %s", libpath);
+  LOG_MSG("Loading HYDRA from library %s and using conf '%s'", libpath, conf);
 
   hydra->lib = dlopen(libpath, RTLD_NOW);
   if (!hydra->lib) FAIL("Failed to load hydra libray from '%s': %s", libpath, dlerror());
@@ -79,8 +84,10 @@ void HYDRA_Init(const char *libpath)
   hydra->machine->hardware->io_in16          = hydra_machine_io_in16;
   hydra->machine->hardware->io_out8          = hydra_machine_io_out8;
   hydra->machine->hardware->io_out16         = hydra_machine_io_out16;
+  hydra->machine->hardware->state_save       = hydra_machine_state_save;
+  hydra->machine->hardware->state_restore    = hydra_machine_state_restore;
 
-  hydra->init(hydra->machine->hardware, hydra->audio);
+  hydra->init(hydra->machine->hardware, hydra->audio, conf);
   hydra_enable = true;
 }
 
@@ -133,11 +140,17 @@ int HYDRA_Attempt(void)
   }
 
   cpu_state_dump(hydra->machine->registers);
-  int hydraed = hydra->exec(hydra->machine, InterruptCount);
-  if (hydraed) {
-    cpu_state_load(hydra->machine->registers);
+  int hydra_state = hydra->exec(hydra->machine, InterruptCount);
+  switch (hydra_state) {
+    case 0: return 0;
+    case 1:
+      cpu_state_load(hydra->machine->registers);
+      return 1;
+    case 2:
+      return 1;
+    default:
+      FAIL("Invalid return value from hydra");
   }
-  return hydraed;
 }
 
 void HYDRA_Notify_Ip(void)
@@ -158,4 +171,14 @@ int HYDRA_AudioCallback(uint8_t *stream, int len)
   } else {
     return 0;
   }
+}
+
+void HYDRA_MachineSave(const char *path) {
+  extern void SaveStates_SaveGameState(const std::string& path);
+  SaveStates_SaveGameState(path);
+}
+
+void HYDRA_MachineRestore_Request(const char *path) {
+  extern void SaveStates_LoadGameState(const std::string& path);
+  SaveStates_LoadGameState(path);
 }

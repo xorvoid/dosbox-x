@@ -7076,6 +7076,10 @@ bool DOSBOX_parse_argv() {
             if (!control->cmdline->NextOptArgv(tmp)) return false;
             control->opt_hydra = tmp;
         }
+        else if (optname == "hydra-conf") {
+            if (!control->cmdline->NextOptArgv(tmp)) return false;
+            control->opt_hydra_conf = tmp;
+        }
         else if (optname == "conf") {
             if (!control->cmdline->NextOptArgv(tmp)) return false;
             control->config_file_list.push_back(tmp);
@@ -7242,7 +7246,7 @@ void TIMER_Init();
 void CMOS_Init();
 void VGA_Init();
 void CPU_Init();
-void HYDRA_Init(const char *libpath);
+void HYDRA_Init(const char *libpath, const char *conf);
 void ISAPNP_Cfg_Init();
 #if C_FPU
 void FPU_Init();
@@ -8963,7 +8967,7 @@ int main(int argc, char* argv[]) SDL_MAIN_NOEXCEPT {
         NE2K_Init();
 
         if (control->opt_hydra.size() > 0) {
-          HYDRA_Init(control->opt_hydra.c_str());
+          HYDRA_Init(control->opt_hydra.c_str(), control->opt_hydra_conf.c_str());
         }
 
 #if DOSBOXMENU_TYPE == DOSBOXMENU_HMENU

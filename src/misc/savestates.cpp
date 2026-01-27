@@ -189,7 +189,7 @@ void LoadGameState(bool pressed) {
     if (!GFX_IsFullscreen()&&render.aspect) GFX_LosingFocus();
     try
     {
-        LOG_MSG("Loading state from slot: %d", (int)currentSlot + 1);
+      LOG_MSG("Loading state from slot: %d (savefilename: %s)", (int)currentSlot + 1, savefilename.c_str());
         SaveState::instance().load(currentSlot);
 #if defined(USE_TTF)
         if (ttf.inUse) resetFontSize();
@@ -1716,4 +1716,23 @@ std::string SaveState::getName(size_t slot, bool nl) const {
     if (strlen(buffer3)) ret+=nl?"Remark: "+(!strlen(buffer3)?"-":std::string(buffer3))+"\n":" - "+std::string(buffer3)+")";
     else if (!nl) ret+=")";
 	return ret;
+}
+
+//// Exposed for Hydra
+void SaveStates_SaveGameState(const std::string& path) {
+  bool backup__noremark_save_state = noremark_save_state;
+  noremark_save_state = true;
+
+  savefilename = path;
+  use_save_file = true;
+
+  SaveGameState(true);
+
+  noremark_save_state = backup__noremark_save_state;
+}
+void SaveStates_LoadGameState(const std::string& path) {
+  savefilename = path;
+  use_save_file = true;
+
+  LoadGameState(true);
 }

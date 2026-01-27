@@ -27,6 +27,9 @@ struct hydra_machine_hardware
   uint16_t (*io_in16)(hydra_machine_ctx_t *ctx, uint16_t port);
   void     (*io_out8)(hydra_machine_ctx_t *ctx, uint16_t port, uint8_t val);
   void     (*io_out16)(hydra_machine_ctx_t *ctx, uint16_t port, uint16_t val);
+
+  void (*state_save)(hydra_machine_ctx_t *ctx, const char *path);
+  void (*state_restore)(hydra_machine_ctx_t *ctx, const char *path);
 };
 
 struct hydra_machine_registers
@@ -49,7 +52,7 @@ struct hydra_machine_audio
   void *ctx;
 };
 
-#define HYDRA_MACHINE_INIT_FUNC(name) void name(hydra_machine_hardware_t *hw, hydra_machine_audio_t *audio)
+#define HYDRA_MACHINE_INIT_FUNC(name) void name(hydra_machine_hardware_t *hw, hydra_machine_audio_t *audio, const char *conf)
 HYDRA_MACHINE_INIT_FUNC(hydra_machine_init);
 typedef HYDRA_MACHINE_INIT_FUNC((*hydra_machine_init_fn_t));
 

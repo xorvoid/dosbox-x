@@ -183,7 +183,7 @@ Bits CPU_Core_Normal_Run(void) {
     // hydra integration
     if (HYDRA_Attempt()) {
       cycle_count++;
-      continue;
+      break;
     }
 
 		cycle_count++;
