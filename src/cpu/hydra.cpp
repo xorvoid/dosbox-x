@@ -24,6 +24,9 @@ struct hydra
 };
 
 static uint8_t *hydra_machine_mem_hostaddr(hydra_machine_ctx_t *, uint32_t addr) {
+  // Allow zero-address, and map it to NULL (technically this is valid memory, but generally used as null more)
+  if (addr == 0) return NULL;
+
   // If the address is definitely in conventional memory range, just form a simple host address
   // NOTE: This bypasses the TLB & Paging mechanisms.. so it's only sane in Real Mode assuming
   // we have enough memory!
@@ -52,7 +55,7 @@ static void hydra_machine_io_out8(hydra_machine_ctx_t *, uint16_t port, uint8_t 
 static void hydra_machine_io_out16(hydra_machine_ctx_t *, uint16_t port, uint16_t val) { IO_WriteW(port, val); }
 
 static void hydra_machine_state_save(hydra_machine_ctx_t *, const char *path) { HYDRA_MachineSave(path); }
-static void hydra_machine_state_restore(hydra_machine_ctx_t *, const char *path) { HYDRA_MachineRestore_Request(path); }
+static void hydra_machine_state_restore(hydra_machine_ctx_t *, const char *path) { HYDRA_MachineRestore(path); }
 
 static hydra_t hydra[1];
 static bool hydra_enable = false;
@@ -178,7 +181,7 @@ void HYDRA_MachineSave(const char *path) {
   SaveStates_SaveGameState(path);
 }
 
-void HYDRA_MachineRestore_Request(const char *path) {
+void HYDRA_MachineRestore(const char *path) {
   extern void SaveStates_LoadGameState(const std::string& path);
   SaveStates_LoadGameState(path);
 }
