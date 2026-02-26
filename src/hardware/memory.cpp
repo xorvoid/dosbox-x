@@ -36,6 +36,9 @@
 # include <stdio.h>
 #endif
 
+#include <fcntl.h>
+#include <sys/mman.h>
+
 #include "voodoo.h"
 #include "glidedef.h"
 
@@ -116,7 +119,7 @@ public:
     uint8_t readb(PhysPt addr) {
         (void)addr;//UNUSED
         return 0xFF; /* Real hardware returns 0xFF not 0x00 */
-    } 
+    }
     void writeb(PhysPt addr,uint8_t val) {
         (void)addr;//UNUSED
         (void)val;//UNUSED
@@ -138,7 +141,7 @@ public:
         }
 #endif
         return 0xFF; /* Real hardware returns 0xFF not 0x00 */
-    } 
+    }
     void writeb(PhysPt addr,uint8_t val) {
         (void)addr;//UNUSED
         (void)val;//UNUSED
@@ -801,7 +804,7 @@ Bitu MEM_TotalPages(void) {
 
 Bitu MEM_FreeLargest(void) {
     Bitu size=0;Bitu largest=0;
-    Bitu index=XMS_START;   
+    Bitu index=XMS_START;
     while (index<memory.reported_pages) {
         if (!memory.mhandles[index]) {
             size++;
@@ -817,7 +820,7 @@ Bitu MEM_FreeLargest(void) {
 
 Bitu MEM_FreeTotal(void) {
     Bitu free=0;
-    Bitu index=XMS_START;   
+    Bitu index=XMS_START;
     while (index<memory.reported_pages) {
         if (!memory.mhandles[index]) free++;
         index++;
@@ -825,7 +828,7 @@ Bitu MEM_FreeTotal(void) {
     return free;
 }
 
-Bitu MEM_AllocatedPages(MemHandle handle) 
+Bitu MEM_AllocatedPages(MemHandle handle)
 {
     Bitu pages = 0;
     while (handle>0) {
@@ -838,7 +841,7 @@ Bitu MEM_AllocatedPages(MemHandle handle)
 //TODO Maybe some protection for this whole allocation scheme
 
 INLINE uint32_t BestMatch(Bitu size) {
-    uint32_t index=XMS_START;   
+    uint32_t index=XMS_START;
     uint32_t first=0;
     uint32_t best=0xfffffff;
     uint32_t best_first=0;
@@ -847,7 +850,7 @@ INLINE uint32_t BestMatch(Bitu size) {
         if (!first) {
             /* Check if this is a free page */
             if (!memory.mhandles[index]) {
-                first=index;    
+                first=index;
             }
         } else {
             /* Check if this still is used page */
@@ -1094,15 +1097,15 @@ MemHandle MEM_NextHandle(MemHandle handle) {
 
 MemHandle MEM_NextHandleAt(MemHandle handle,Bitu where) {
     while (where) {
-        where--;    
+        where--;
         handle=memory.mhandles[handle];
     }
     return handle;
 }
 
 
-/* 
-    A20 line handling, 
+/*
+    A20 line handling,
     Basically maps the 4 pages at the 1mb to 0mb in the default page directory
 */
 bool MEM_A20_Enabled(void) {
@@ -1635,7 +1638,7 @@ void REDOS_ProgramStart(Program * * make) {
 }
 
 /*! \brief          A20GATE.COM built-in command on drive Z:
- *  
+ *
  *  \description    Utility command for the user to set/view the A20 gate state
  */
 class A20GATE : public Program {
@@ -1763,11 +1766,14 @@ void Init_AddressLimitAndGateMask() {
 void ShutDownRAM(Section * sec) {
     (void)sec;//UNUSED
     if (MemBase != NULL) {
-#if C_GAMELINK
-        GameLink::FreeRAM(MemBase);
-#else
-        delete [] MemBase;
-#endif
+      //////////////////////////////////////////////////////
+      // NOTE: Replaced with mmap()
+      //////////////////////////////////////////////////////
+      // #if C_GAMELINK
+      //         GameLink::FreeRAM(MemBase);
+      // #else
+      //         delete [] MemBase;
+      // #endif
         MemBase = NULL;
     }
 }
@@ -1777,6 +1783,36 @@ void MEM_InitCallouts(void) {
     MEM_callouts[MEM_callouts_index(MEM_TYPE_ISA)].resize(64);
     MEM_callouts[MEM_callouts_index(MEM_TYPE_PCI)].resize(64);
     MEM_callouts[MEM_callouts_index(MEM_TYPE_MB)].resize(64);
+}
+
+static void *alloc_shm(size_t size)
+{
+  const char *path = "/dev/shm/dosbox_mem";
+  unlink(path);
+
+  int fd = open(path, O_RDWR | O_CREAT | O_TRUNC, 0600);
+  if (fd < 0) {
+    perror("open");
+    exit(1);
+  }
+
+  if (ftruncate(fd, (off_t)size) < 0) {
+    perror("ftruncate");
+    close(fd);
+    unlink(path);
+    exit(1);
+  }
+
+  void *addr = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+  if (addr == MAP_FAILED) {
+    perror("mmap");
+    close(fd);
+    unlink(path);
+    exit(1);
+  }
+
+  close(fd);
+  return addr;
 }
 
 void Init_RAM() {
@@ -1864,11 +1900,14 @@ void Init_RAM() {
 
     /* Allocate the RAM. We alloc as a large unsigned char array. new[] does not initialize the array,
      * so we then must zero the buffer. */
-#if C_GAMELINK
-    MemBase = GameLink::AllocRAM(memory.pages*4096);
-#else // C_GAMELINK
-    MemBase = new(std::nothrow) uint8_t[memory.pages*4096];
-#endif // C_GAMELINK
+
+// #if C_GAMELINK
+//     MemBase = GameLink::AllocRAM(memory.pages*4096);
+// #else // C_GAMELINK
+//     MemBase = new(std::nothrow) uint8_t[memory.pages*4096];
+// #endif // C_GAMELINK
+    MemBase = (HostPt)alloc_shm(memory.pages*4096);
+
     if (!MemBase) E_Exit("Can't allocate main memory of %d KB",(int)memsizekb);
     /* Clear the memory, as new doesn't always give zeroed memory
      * (Visual C debug mode). We want zeroed memory though. */

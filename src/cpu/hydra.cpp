@@ -57,6 +57,13 @@ static void hydra_machine_io_out16(hydra_machine_ctx_t *, uint16_t port, uint16_
 static void hydra_machine_state_save(hydra_machine_ctx_t *, const char *path) { HYDRA_MachineSave(path); }
 static void hydra_machine_state_restore(hydra_machine_ctx_t *, const char *path) { HYDRA_MachineRestore(path); }
 
+
+static void cpu_state_load(hydra_machine_registers_t *cpu);
+
+static void hydra_machine_update_registers(hydra_machine_ctx_t *, hydra_machine_registers_t *regs) {
+  cpu_state_load(regs);
+}
+
 static hydra_t hydra[1];
 static bool hydra_enable = false;
 
@@ -89,6 +96,7 @@ void HYDRA_Init(const char *libpath, const char *conf)
   hydra->machine->hardware->io_out16         = hydra_machine_io_out16;
   hydra->machine->hardware->state_save       = hydra_machine_state_save;
   hydra->machine->hardware->state_restore    = hydra_machine_state_restore;
+  hydra->machine->hardware->update_registers = hydra_machine_update_registers;
 
   hydra->init(hydra->machine->hardware, hydra->audio, conf);
   hydra_enable = true;

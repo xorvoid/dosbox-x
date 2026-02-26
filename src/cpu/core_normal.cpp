@@ -220,14 +220,15 @@ restart_opcode:
 			continue;
 		}
 		SAVEIP;
+    FillFlags();
     HYDRA_Notify_Ip();
 	}
 	FillFlags();
 	return CBRET_NONE;
 decode_end:
 	SAVEIP;
-  HYDRA_Notify_Ip();
 	FillFlags();
+  HYDRA_Notify_Ip();
 	return CBRET_NONE;
 }
 

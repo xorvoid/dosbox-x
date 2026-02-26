@@ -30,6 +30,8 @@ struct hydra_machine_hardware
 
   void (*state_save)(hydra_machine_ctx_t *ctx, const char *path);
   void (*state_restore)(hydra_machine_ctx_t *ctx, const char *path);
+
+  void (*update_registers)(hydra_machine_ctx_t *ctx, hydra_machine_registers_t *regs);
 };
 
 struct hydra_machine_registers
