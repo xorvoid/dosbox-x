@@ -66,6 +66,10 @@ typedef HYDRA_MACHINE_EXEC_FUNC((*hydra_machine_exec_fn_t));
 HYDRA_MACHINE_NOTIFY_FUNC(hydra_machine_notify);
 typedef HYDRA_MACHINE_NOTIFY_FUNC((*hydra_machine_notify_fn_t));
 
+#define HYDRA_MACHINE_STEP_HOOK_FUNC(name) void name(hydra_machine_t *m)
+HYDRA_MACHINE_STEP_HOOK_FUNC(hydra_machine_step_hook);
+typedef HYDRA_MACHINE_STEP_HOOK_FUNC((*hydra_machine_step_hook_fn_t));
+
 #ifdef __cplusplus
 }
 #endif

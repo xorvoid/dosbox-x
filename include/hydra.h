@@ -5,6 +5,7 @@
 void HYDRA_Init(const char *libpath, const char *conf);
 int HYDRA_Attempt(void);
 void HYDRA_Notify_Ip(void);
+void HYDRA_Step_Hook(void);
 int HYDRA_AudioCallback(uint8_t *stream, int len);
 
 void HYDRA_MachineSave(const char *path);

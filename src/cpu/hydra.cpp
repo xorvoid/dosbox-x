@@ -19,6 +19,7 @@ struct hydra
   hydra_machine_init_fn_t init;
   hydra_machine_exec_fn_t exec;
   hydra_machine_notify_fn_t notify;
+  hydra_machine_step_hook_fn_t step_hook;
   hydra_machine_t machine[1];
   hydra_machine_audio_t audio[1];
 };
@@ -82,6 +83,9 @@ void HYDRA_Init(const char *libpath, const char *conf)
 
   *(void**)&hydra->notify = dlsym(hydra->lib, "hydra_machine_notify");
   if(!hydra->notify) FAIL("Failed to find 'hydra_machine_notify'");
+
+  *(void**)&hydra->step_hook = dlsym(hydra->lib, "hydra_machine_step_hook");
+  if(!hydra->step_hook) FAIL("Failed to find 'hydra_machine_step_hook'");
 
   memset(hydra->machine, 0, sizeof(*hydra->machine));
   hydra->machine->hardware->ctx              = NULL;
@@ -172,6 +176,16 @@ void HYDRA_Notify_Ip(void)
 
   cpu_state_dump(hydra->machine->registers);
   hydra->notify(hydra->machine);
+}
+
+void HYDRA_Step_Hook(void)
+{
+  if (!hydra_enable) {
+    return;
+  }
+
+  cpu_state_dump(hydra->machine->registers);
+  hydra->step_hook(hydra->machine);
 }
 
 int HYDRA_AudioCallback(uint8_t *stream, int len)

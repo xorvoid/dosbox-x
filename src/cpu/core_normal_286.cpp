@@ -24,6 +24,7 @@
 #include "paging.h"
 #include "pic.h"
 #include "fpu.h"
+#include "hydra.h"
 
 bool CPU_RDMSR();
 bool CPU_WRMSR();
@@ -100,7 +101,7 @@ extern Bitu cycle_count;
 
 // it's the core's job not to decode 0x66-0x67 when compiled for 286
 #define DO_PREFIX_ADDR()								\
-	abort();									
+	abort();
 
 #define DO_PREFIX_REP(_ZERO)				\
     if (GETFLAG(IF) && CPU_Cycles <= 0 && !mustCompleteInstruction) goto prefix_out; \
@@ -175,8 +176,18 @@ Bits CPU_Core286_Normal_Run(void) {
     if (CPU_Cycles <= 0)
 	    return CBRET_NONE;
 
-	while (CPU_Cycles-->0) {
+  while (1) {
+    if (!(CPU_Cycles-->0)) break;
+
+    //printf("before notify: loop start\n");
+    HYDRA_Notify_Ip();
+    //printf("after notify: loop start\n");
+
+    //printf("dosbox | wait for next step req\n");
+    HYDRA_Step_Hook();
+    //printf("dosbox | running step on CS:IP = %04x:%04x\n", SegValue(cs), reg_ip);
 		LOADIP;
+
 		core.prefixes=0;
 		core.opcode_index=0;
 		core.ea_table=&EATable[0];
@@ -191,6 +202,13 @@ Bits CPU_Core286_Normal_Run(void) {
 		}
 #endif
 #endif
+
+    // hydra integration
+    if (HYDRA_Attempt()) {
+      cycle_count++;
+      break;
+    }
+
 		cycle_count++;
 restart_opcode:
 		switch (core.opcode_index+Fetchb()) {
@@ -198,7 +216,7 @@ restart_opcode:
 		#include "core_normal/prefix_0f.h"
 		default:
 		illegal_opcode:
-#if C_DEBUG	
+#if C_DEBUG
 			{
 				bool ignore=false;
 				Bitu len=(GETIP-reg_eip);
@@ -222,19 +240,32 @@ restart_opcode:
 			continue;
 		}
 		SAVEIP;
+    FillFlags();
+    //printf("before notify: loop end\n");
+    HYDRA_Notify_Ip();
+    //printf("after notify: loop end\n");
 	}
 	FillFlags();
-	return CBRET_NONE;
+  //printf("before notify: return\n");
+  HYDRA_Notify_Ip();
+  //printf("after notify: return\n");
+  return CBRET_NONE;
 /* 8086/286 multiple prefix interrupt bug emulation.
  * If an instruction is interrupted, only the last prefix is restarted.
- * See also [https://www.pcjs.org/pubs/pc/reference/intel/8086/] and [https://www.youtube.com/watch?v=6FC-tcwMBnU] */ 
+ * See also [https://www.pcjs.org/pubs/pc/reference/intel/8086/] and [https://www.youtube.com/watch?v=6FC-tcwMBnU] */
 prefix_out:
 	SAVEIP_PREFIX;
 	FillFlags();
+  //printf("before notify: prefix out\n");
+  HYDRA_Notify_Ip();
+  //printf("after notify: prefix out\n");
 	return CBRET_NONE;
 decode_end:
 	SAVEIP;
 	FillFlags();
+  //printf("before notify: decode end\n");
+  HYDRA_Notify_Ip();
+  //printf("before notify: decode end\n");
 	return CBRET_NONE;
 }
 
@@ -256,4 +287,3 @@ Bits CPU_Core286_Normal_Trap_Run(void) {
 void CPU_Core286_Normal_Init(void) {
 
 }
-

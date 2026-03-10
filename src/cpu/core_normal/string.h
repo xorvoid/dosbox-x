@@ -62,10 +62,12 @@ void DoString(STRING_OP_NORMAL type) {
 		 *      using REP OUTSB to the VGA palette suffered from audio quality problems. at this phase of implementation the
 		 *      "interruptible string ops" parameter is now merely a testing parameter that can be used to verify this code
 		 *      breaks and restarts string ops correctly. */
-		if (cpu_rep_max > 0 && count > (unsigned int)cpu_rep_max) {
-			count_left+=count-(unsigned int)cpu_rep_max;
-			count=(unsigned int)cpu_rep_max;
-		}
+
+    // DISABLE INTERRUPTIONS OF REP INSTRUCTIONS
+		/* if (cpu_rep_max > 0 && count > (unsigned int)cpu_rep_max) { */
+		/* 	count_left+=count-(unsigned int)cpu_rep_max; */
+		/* 	count=(unsigned int)cpu_rep_max; */
+		/* } */
 	}
 
 #if defined(PREFETCH_CORE)
@@ -186,7 +188,9 @@ void DoString(STRING_OP_NORMAL type) {
 							di_index=(di_index+(Bitu)add_index) & add_mask;
 							count--;
 
-							if ((--CPU_Cycles) <= 0 && break_flag) break;
+              // DISABLE INTERRUPTIONS OF REP STOS
+							//if ((--CPU_Cycles) <= 0 && break_flag) break;
+
 						} while (count != 0); break;
 					}
 				case R_STOSW:
@@ -249,6 +253,7 @@ void DoString(STRING_OP_NORMAL type) {
 					} while (count != 0); break;
 
 				case R_MOVSB:
+          printf("dosbox | movsb | count: 0x%x | cx: 0x%x\n", count, reg_cx);
 					do {
 						if (do_seg_limits) {
 							if (Segs.expanddown[core.base_val_ds]) {
@@ -293,7 +298,9 @@ void DoString(STRING_OP_NORMAL type) {
 						si_index=(si_index+(Bitu)add_index) & add_mask;
 						count--;
 
-						if ((--CPU_Cycles) <= 0) break;
+            // DISABLE INTERRUPTIONS OF REP STOS
+						//if ((--CPU_Cycles) <= 0) break;
+
 					} while (count != 0); break;
 				case R_MOVSW:
 					add_index<<=1;
@@ -341,7 +348,9 @@ void DoString(STRING_OP_NORMAL type) {
 						si_index=(si_index+(Bitu)add_index) & add_mask;
 						count--;
 
-						if ((--CPU_Cycles) <= 0) break;
+            // DISABLE INTERRUPTIONS OF REP STOS
+						//if ((--CPU_Cycles) <= 0) break;
+
 					} while (count != 0); break;
 				case R_MOVSD:
 					add_index<<=2;
@@ -603,4 +612,3 @@ void DoString(STRING_OP_NORMAL type) {
 		}
 	}
 }
-

@@ -371,7 +371,11 @@ static Bitu Normal_Loop(void) {
 
                 saved_allow = dosbox_allow_nonrecursive_page_fault;
                 dosbox_allow_nonrecursive_page_fault = true;
+
+                //printf("Before decode | CS:IP = %04x:%04x\n", SegValue(cs), reg_ip);
                 ret = (*cpudecoder)();
+                //printf("After decode | CS:IP = %04x:%04x\n", SegValue(cs), reg_ip);
+
                 dosbox_allow_nonrecursive_page_fault = saved_allow;
 
                 if (GCC_UNLIKELY(ret<0))

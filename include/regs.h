@@ -39,7 +39,7 @@
 #define FLAG_ID		0x00200000U
 
 #define FMASK_TEST		(FLAG_CF | FLAG_PF | FLAG_AF | FLAG_ZF | FLAG_SF | FLAG_OF)
-#define FMASK_NORMAL	(FMASK_TEST | FLAG_DF | FLAG_TF | FLAG_IF )	
+#define FMASK_NORMAL	(FMASK_TEST | FLAG_DF | FLAG_TF | FLAG_IF )
 #define FMASK_ALL		(FMASK_NORMAL | FLAG_IOPL | FLAG_NT)
 
 #define SETFLAGBIT(TYPE,TEST) if (TEST) reg_flags|=FLAG_ ## TYPE; else reg_flags&=~FLAG_ ## TYPE
@@ -105,9 +105,9 @@ static INLINE PhysPt SegPhys(SegNames index) {
 static INLINE uint16_t SegValue(SegNames index) {
 	return (uint16_t)Segs.val[index];
 }
-	
+
 static INLINE RealPt RealMakeSeg(SegNames index,uint16_t off) {
-	return RealMake(SegValue(index),off);	
+	return RealMake(SegValue(index),off);
 }
 
 
